@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Product Browser</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    .skeleton {
+      background: linear-gradient(90deg, #f0f0f0 25%, #e0e0e0 50%, #f0f0f0 75%);
+      background-size: 200% 100%;
+      animation: shimmer 1.5s infinite;
+    }
+    @keyframes shimmer {
+      0% { background-position: -200% 0; }
+      100% { background-position: 200% 0; }
+    }
+  </style>
+</head>
+<body class="bg-gray-100">
+  <header class="bg-white shadow-md p-4 flex justify-between items-center">
+    <h1 class="text-2xl font-bold">🛍 Product Browser</h1>
+    <a href="/" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Home</a>
+  </header>
+
+  <main class="p-6">
+    <div id="product-grid" class="grid gap-4 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <% for (let i = 0; i < limit; i++) { %>
+        <div class="bg-white rounded-lg shadow p-4 flex flex-col animate-pulse">
+          <div class="w-full h-40 rounded mb-2 skeleton"></div>
+          <div class="h-4 w-3/4 mb-2 skeleton rounded"></div>
+          <div class="h-3 w-full mb-1 skeleton rounded"></div>
+          <div class="h-3 w-5/6 skeleton rounded"></div>
+          <div class="h-4 w-1/4 mt-2 skeleton rounded"></div>
+        </div>
+      <% } %>
+    </div>
+
+    <!-- Pagination -->
+    <div class="flex justify-center items-center gap-4 mt-6">
+      <% if (page > 1) { %>
+        <a href="/?page=<%= page - 1 %>&limit=<%= limit %>" 
+           class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Previous</a>
+      <% } %>
+      <span class="font-semibold">Page <%= page %></span>
+      <a href="/?page=<%= page + 1 %>&limit=<%= limit %>" 
+         class="px-4 py-2 bg-gray-300 rounded hover:bg-gray-400">Next</a>
+    </div>
+  </main>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      const grid = document.getElementById("product-grid");
+      const page = Number('<%= page %>');
+      const limit = Number('<%= limit %>');
+
+      try {
+        const res = await fetch(`/?page=${page}&limit=${limit}&json=true`);
+        const products = await res.json();
+
+        grid.innerHTML = ""; // remove skeletons
+
+        products.forEach(p => {
+          const card = document.createElement("div");
+          card.className = "bg-white rounded-lg shadow p-4 flex flex-col";
+
+          card.innerHTML = `
+            <img 
+              src="https://picsum.photos/20/20.webp?random=${p.id}" 
+              data-src="${p.thumbnail && p.thumbnail.trim() !== '' 
+                ? p.thumbnail 
+                : 'https://picsum.photos/200/150.webp?random=' + p.id}" 
+              alt="${p.title}" 
+              class="w-full h-40 object-cover rounded mb-2 lazy-img"
+            >
+            <h2 class="font-semibold text-lg truncate">${p.title}</h2>
+            <p class="text-gray-600 text-sm flex-1">${p.description}</p>
+            <p class="mt-2 font-bold text-blue-600">$${p.price || 0}</p>
+          `;
+
+          grid.appendChild(card);
+        });
+
+        // Lazy load images
+        const lazyImages = document.querySelectorAll(".lazy-img");
+        const observer = new IntersectionObserver(entries => {
+          entries.forEach(entry => {
+            if (entry.isIntersecting) {
+              const img = entry.target;
+              img.src = img.dataset.src;
+              observer.unobserve(img);
+            }
+          });
+        });
+        lazyImages.forEach(img => observer.observe(img));
+
+      } catch (err) {
+        console.error("Error loading products:", err);
+      }
+    });
+  </script>
+</body>
+</html>
