@@ -4,7 +4,6 @@ const client = require("./client"); // Redis client
 const path = require("path");
 require("dotenv").config();
 
-
 const app = express();
 const PORT = process.env.PORT || 3000;
 const PAGE_LIMIT = 25;
@@ -13,14 +12,18 @@ app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 app.use(compression());
 
-// Helper: batch fetch products via Redis pipeline
+// Helper: batch fetch products via Redis multi
+// Helper: batch fetch products via Redis multi
 async function getProductsByIds(ids) {
   if (!ids || ids.length === 0) return [];
-  const pipeline = client.pipeline();
-  ids.forEach((id) => pipeline.hgetall(`product:${id}`));
-  const results = await pipeline.exec();
-  return results.map(([err, data]) => (err ? {} : data));
+
+  const multi = client.multi(); // Redis v4 multi
+  ids.forEach((id) => multi.hGetAll(`product:${id}`));
+
+  const results = await multi.exec(); // returns array of objects [{field: value}, ...]
+  return results; // direct return, no [err, value] destructure
 }
+
 
 app.get("/", async (req, res) => {
   try {
@@ -29,22 +32,22 @@ app.get("/", async (req, res) => {
     const offset = (page - 1) * limit;
 
     // Sorted set से IDs निकालना
-    const productIds = await client.zrange(
-      "product_ids_sorted_set",
-      offset,
-      offset + limit - 1
+    const productIds = await client.zRange(
+    "product_ids_sorted_set",
+    offset,
+    offset + limit - 1
     );
 
-    // Batch fetch with pipeline
+    // Batch fetch with multi
     const products = await getProductsByIds(productIds);
 
-    // ✅ अगर json=true है → सिर्फ JSON
+    // JSON / EJS render
     if (req.query.json === "true") {
-      return res.json(products);
+    return res.json(products);
     }
 
-    // ✅ वरना EJS render करो
     res.render("index", { products, page, limit });
+
   } catch (err) {
     console.error("Error in / route:", err);
     res.status(500).send("Internal Server Error");
