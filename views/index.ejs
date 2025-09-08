@@ -69,10 +69,10 @@
               data-src="${p.thumbnail && p.thumbnail.trim() !== '' 
                 ? p.thumbnail 
                 : 'https://picsum.photos/200/150.webp?random=' + p.id}" 
-              alt="${p.title}" 
+              alt="${p.name}" 
               class="w-full h-40 object-cover rounded mb-2 lazy-img"
             >
-            <h2 class="font-semibold text-lg truncate">${p.title}</h2>
+            <h2 class="font-semibold text-lg truncate">${p.name}</h2>
             <p class="text-gray-600 text-sm flex-1">${p.description}</p>
             <p class="mt-2 font-bold text-blue-600">$${p.price || 0}</p>
           `;
