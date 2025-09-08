@@ -1,17 +1,19 @@
-const Redis = require("ioredis");
+const { createClient } = require('redis');
 
-// Env से ले लो, default localhost:6379
-const redis = new Redis({
-  host: process.env.REDIS_HOST || "127.0.0.1",
-  port: process.env.REDIS_PORT || 6379,
+const client = createClient({
+    username: 'default',
+    password: process.env.REDIS_PASSWORD,
+    socket: {
+        host: process.env.REDIS_HOST,
+        port: process.env.REDIS_PORT
+    }
 });
 
-redis.on("connect", () => {
-  console.log("✅ Connected to Redis");
-});
+client.on('error', err => console.log('Redis Client Error', err));
 
-redis.on("error", (err) => {
-  console.error("❌ Redis error", err);
-});
+await client.connect();
 
-module.exports = redis;
+await client.set('foo', 'bar');
+const result = await client.get('foo');
+console.log(result)  // >>> bar
+
