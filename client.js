@@ -14,8 +14,12 @@ client.on("error", (err) => {
 
 (async () => {
   await client.connect();
+  console.log("HOST: ", process.env.REDIS_HOST);
+  console.log("PORT: ", process.env.REDIS_PORT);
+  console.log("PASSWORD: ", process.env.REDIS_PASSWORD);
   console.log("✅ Redis connected!");
 })();
 
 module.exports = client;
+
 
